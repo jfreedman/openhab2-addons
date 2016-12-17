@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<binding:binding id="honeywellthermostat"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xmlns:binding="http://eclipse.org/smarthome/schemas/binding/v1.0.0"
+                 xsi:schemaLocation="http://eclipse.org/smarthome/schemas/binding/v1.0.0 http://eclipse.org/smarthome/schemas/binding-1.0.0.xsd">
+
+    <name>Honeywell Thermostat Binding</name>
+    <description>Controls Honeywell Thermostats from openHAB. Requires internet connection and Honeywell account.  Tested with Honeywell TH9320WF5003 US Model, but other models that use the mytotalcomfort.com site may be supported.</description>
+    <author>Jeremy Freedman and Rendman</author>
+
+</binding:binding>
