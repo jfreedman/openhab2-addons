@@ -122,8 +122,11 @@ public class TcpConnectedHandler extends BaseThingHandler implements
 							updateStatus(ThingStatus.OFFLINE);
 							bridgeHandler = null;
 						} else {
-							logger.info("light is online");
-							updateStatus(ThingStatus.ONLINE);
+							if(bridgeHandler.getLight(did).getOffline()) {
+								updateStatus(ThingStatus.OFFLINE);
+							} else {
+								updateStatus(ThingStatus.ONLINE);
+							}
 						}
 
 					} else {
@@ -207,20 +210,20 @@ public class TcpConnectedHandler extends BaseThingHandler implements
 						if (command.equals(IncreaseDecreaseType.DECREASE))
 							level = Math.max(0, level - 5);
 						bridge.getClient().setLevel(light, level);
-						logger.info("set value of:" + level);
+						logger.info("increase set value of:" + level);
 						this.level = level;
 						updateState = new PercentType(level);
 					} else if (command instanceof PercentType) {
 						DecimalType level = (DecimalType) command;
 						bridge.getClient().setLevel(light, level.intValue());
-						logger.info("set value of:" + level);
+						logger.info("percent set value of:" + level);
 						this.level = level.intValue();
 						updateState = (PercentType) command;
 					} else if (command instanceof DecimalType) {
 						// set volume
 						DecimalType level = (DecimalType) command;
 						bridge.getClient().setLevel(light, level.intValue());
-						logger.info("set value of:" + level);
+						logger.info("decimal set value of:" + level);
 						this.level = level.intValue();
 						updateState = (DecimalType) command;
 					} else if (command instanceof OnOffType) {
@@ -247,10 +250,27 @@ public class TcpConnectedHandler extends BaseThingHandler implements
 	public void onLightStateChanged(ThingUID bridge,
 			LightConfig light) {
 		if (light.getDid().equals(did)) {
-			updateStatus(ThingStatus.ONLINE);
-			if(light.getLevel()!=level || light.getState()!=state)
-			logger.error("state change occurred: level:" + light.getLevel() + " state:" + light.getState());
-			updateState(TcpConnectedBindingConstants.LEVEL_CHANNEL, new PercentType(light.getLevel()));
+
+			if(light.getOffline() && !getThing().getStatus().equals(ThingStatus.OFFLINE)) {
+				logger.info("light went offline");
+			}
+			if(light.getOffline()) {
+				updateStatus(ThingStatus.OFFLINE);
+				return;
+			}
+
+			if(!light.getOffline() && !getThing().getStatus().equals(ThingStatus.ONLINE)) {
+				logger.info("light went online");
+			}
+			if(!light.getOffline()) {
+				updateStatus(ThingStatus.ONLINE);
+			}
+			if(light.getLevel()!=level || light.getState()!=state) {
+				logger.error("state change occurred: level:" + light.getLevel() + " state:" + light.getState());
+				this.level = light.getLevel();
+				this.state = light.getState();
+				updateState(TcpConnectedBindingConstants.LEVEL_CHANNEL, new PercentType(light.getLevel()));
+			}
 		}
 	}
 

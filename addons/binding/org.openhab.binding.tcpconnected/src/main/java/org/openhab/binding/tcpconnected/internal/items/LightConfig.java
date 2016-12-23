@@ -19,13 +19,15 @@ public class LightConfig {
 	protected State state;
 	protected int level;
 	protected boolean found;
+	protected boolean offline;
 
-	public LightConfig(String did, String name, State state, int level, boolean found) {
+	public LightConfig(String did, String name, State state, int level, boolean found, boolean offine) {
 		this.did = did;
 		this.name = name;
 		this.state=state;
 		this.level=level;
 		this.found = found;
+		this.offline = offine;
 	}
 
 	
@@ -49,6 +51,12 @@ public class LightConfig {
 
 	public void setLevel(int level) {
 		this.level = level;
+	}
+
+	public boolean getOffline() { return offline; }
+
+	public void setOffline(boolean offline) {
+		this.offline = offline;
 	}
 
 	public State getState() {

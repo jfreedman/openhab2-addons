@@ -89,7 +89,7 @@ public class TcpConnectedClient {
     }
 
     public String generateToken(String guid) throws Exception {
-        String command = String.format("cmd=GWRLogin&data=<gip><version>1</version><email>%s</email><password>%s</password></gip>",guid, guid);
+        String command = String.format("cmd=GWRLogin&data=<gip><version>1</version><email>%s</email><password>%s</password></gip>/n",guid, guid);
 
         Request request = client.POST("https://" + host + "/gwr/gop.php");
         request.header("Content-Type", "application/xml");
@@ -115,7 +115,7 @@ public class TcpConnectedClient {
 	 */
 	public void update() throws Exception {
 		logger.info("getting items");
-		String command = String.format("cmd=GWRBatch&data=<gwrcmds><gwrcmd><gcmd>RoomGetCarousel</gcmd><gdata><gip><version>1</version><token>%s</token><fields>name,image,imageurl,control,power,product,class,realtype,status</fields></gip></gdata></gwrcmd></gwrcmds>&fmt=xml",token);
+		String command = String.format("cmd=GWRBatch&data=<gwrcmds><gwrcmd><gcmd>RoomGetCarousel</gcmd><gdata><gip><version>1</version><token>%s</token><fields>name,image,imageurl,control,power,product,class,realtype,status</fields></gip></gdata></gwrcmd></gwrcmds>&fmt=xml/n", token);
 		Request request = client.POST("https://" + host + "/gwr/gop.php");
 		request.header("Content-Type", "application/xml");
 		request.content(new StringContentProvider(command));
@@ -123,22 +123,24 @@ public class TcpConnectedClient {
 		DocumentBuilder db = dbf.newDocumentBuilder();
 		Document doc = db.parse(new InputSource(new StringReader(result)));
 		logger.info(result);
-		if (doc.getFirstChild().hasChildNodes() == false || !((Element)doc.getFirstChild()).getElementsByTagName("rc").item(0).getTextContent().equals("200")) {
+		if (doc.getFirstChild().hasChildNodes() == false || !((Element) doc.getFirstChild()).getElementsByTagName("rc").item(0).getTextContent().equals("200")) {
 			throw new Exception("Could not handle response");
 		}
 		NodeList devices = doc.getElementsByTagName("device");
 		List<LightConfig> newItems = new ArrayList<LightConfig>();
-		for(int i=0; i<devices.getLength(); i++) {
+		for (int i = 0; i < devices.getLength(); i++) {
 			Node device = devices.item(i);
-			String did = ((Element)device).getElementsByTagName("did").item(0).getTextContent();
-			String state = ((Element)device).getElementsByTagName("state").item(0).getTextContent();
+			String did = ((Element) device).getElementsByTagName("did").item(0).getTextContent();
+			String state = ((Element) device).getElementsByTagName("state").item(0).getTextContent();
 			String level = "0";
-			if(state.equals("1")) {
-				level = ((Element)device).getElementsByTagName("level").item(0).getTextContent();
+			if (state.equals("1")) {
+				level = ((Element) device).getElementsByTagName("level").item(0).getTextContent();
 			}
-			String status = ((Element)device).getElementsByTagName("known").item(0).getTextContent();
-			String name = ((Element)device).getElementsByTagName("name").item(0).getTextContent();
-			LightConfig config = new LightConfig(did, name, state.equals("1") ? State.ON : State.OFF, Integer.valueOf(level), status.equals("1"));
+			String status = ((Element) device).getElementsByTagName("known").item(0).getTextContent();
+			String name = ((Element) device).getElementsByTagName("name").item(0).getTextContent();
+			boolean offline = ((Element) device).getElementsByTagName("offline").getLength() > 0;
+
+			LightConfig config = new LightConfig(did, name, state.equals("1") ? State.ON : State.OFF, Integer.valueOf(level), status.equals("1"), offline);
 			newItems.add(config);
 		}
 		logger.info("got:" + newItems.size() + " items");
@@ -169,7 +171,7 @@ public class TcpConnectedClient {
 	}
 
 	public void setLevel(LightConfig light, int level) throws Exception {
-		String command = String.format("cmd=DeviceSendCommand&data=<gip><version>1</version><token>%s</token><did>%s</did><value>%d</value><type>level</type></gip>&fmt=xml",token,light.getDid(),level);
+		String command = String.format("cmd=DeviceSendCommand&data=<gip><version>1</version><token>%s</token><did>%s</did><value>%d</value><type>level</type></gip>&fmt=xml/n",token,light.getDid(),level);
 		Request request = client.POST("https://" + host + "/gwr/gop.php");
 		request.header("Content-Type", "application/xml");
 		request.content(new StringContentProvider(command));
