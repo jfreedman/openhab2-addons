@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="honeywellmytotalconnectcomfort"
+                          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                          xmlns:thing="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0"
+                          xsi:schemaLocation="http://eclipse.org/smarthome/schemas/thing-description/v1.0.0 http://eclipse.org/smarthome/schemas/thing-description-1.0.0.xsd">
+    <thing-type id="thermostat">
+        <supported-bridge-type-refs>
+            <bridge-type-ref id="bridge" />
+        </supported-bridge-type-refs>
+        <label>Honeywell Thermostat</label>
+        <description>Control your Honeywell thermostat controlled by My Total Connect Comfort web site over the internet with OpenHAB.</description>
+        <channels>
+            <channel id="sysMode" typeId="systemMode"/>
+            <channel id="currentTemp" typeId="currentTemperature"/>
+            <channel id="currentHumidity" typeId="currentHumidity"/>
+            <channel id="heatSP" typeId="heatSetPoint"/>
+            <channel id="coolSP" typeId="coolSetPoint"/>
+            <channel id="fanMode" typeId="FanMode"/>
+            <channel id="scheduleMode" typeId="scheduleMode"/>
+            <channel id="holdUntil" typeId="holdUntil"/>
+        </channels>
+    </thing-type>
+</thing:thing-descriptions>

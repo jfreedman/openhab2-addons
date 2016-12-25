@@ -5,7 +5,7 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.honeywellthermostat;
+package org.openhab.binding.honeywellmytotalcomfortthermostat;
 
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 
@@ -17,10 +17,11 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
  */
 public class HoneywellThermostatBindingConstants {
 
-    public static final String BINDING_ID = "honeywellthermostat";
+    public static final String BINDING_ID = "honeywellmytotalconnectcomfort";
 
     // List of all Thing Type UIDs
-    public final static ThingTypeUID HONEY_THERM_THING = new ThingTypeUID(BINDING_ID, "honeythermostat");
+    public final static ThingTypeUID HONEY_BRIDGE = new ThingTypeUID(BINDING_ID, "bridge");
+    public final static ThingTypeUID HONEY_THERM_THING = new ThingTypeUID(BINDING_ID, "thermostat");
 
     // List of all Channel ids
     public final static String SYSTEM_MODE = "sysMode";
@@ -29,6 +30,8 @@ public class HoneywellThermostatBindingConstants {
     public final static String COOL_SETPOINT = "coolSP";
     public final static String FAN_MODE = "fanMode";
     public final static String CURRENT_HUMIDITY = "currentHumidity";
+    public final static String SCHEDULE_MODE = "scheduleMode";
+    public final static String HOLD_UNTIL = "holdUntil";
 
     // constants for config
     public final static String EMAIL = "email";
