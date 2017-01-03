@@ -156,32 +156,33 @@ public class MyTotalComfortClient {
      * @return was update successful
      */
     public boolean submitThermostatChange(String deviceID, HoneywellThermostatData thermodata) {
-        String minutesHold = "";
+        String minutesHold = "null";
         if(thermodata.getCurrentSetPoint()== HoneywellThermostatSetPoint.TEMP_HOLD) {
-           minutesHold = ",\"HeatNextPeriod\":" + thermodata.getHoldUntilTime() + ",\"CoolNextPeriod\":" + thermodata.getHoldUntilTime();
+           minutesHold = String.valueOf(thermodata.getHoldUntilTime());
         }
-        String jsonData = "{\"DeviceID\":" + deviceID.toString() + ",\"SystemSwitch\":"
-                + thermodata.getCurrentSystemMode().getValue() + ",\"HeatSetpoint\":"
-                + Integer.toString(thermodata.getHeatSetPoint()) + ",\"CoolSetpoint\":"
-                + Integer.toString(thermodata.getCoolSetPoint())
-                + ",\"HeatNextPeriod\":null,\"CoolNextPeriod\":null,:"
-                + "\"StatusHeat\":" + thermodata.getCurrentSetPoint()
-                + ",\"StatusCool\":" + thermodata.getCurrentSetPoint()
+        String jsonData = "{"
+                + "\"DeviceID\":" + deviceID.toString()
+                + ",\"SystemSwitch\":" + thermodata.getCurrentSystemMode().getValue()
+                + ",\"HeatSetpoint\":" + Integer.toString(thermodata.getHeatSetPoint())
+                + ",\"CoolSetpoint\":" + Integer.toString(thermodata.getCoolSetPoint())
+                + ",\"HeatNextPeriod\":" + minutesHold
+                + ",\"CoolNextPeriod\":" + minutesHold
+                + ",\"StatusHeat\":" + thermodata.getCurrentSetPoint().getValue()
+                + ",\"StatusCool\":" + thermodata.getCurrentSetPoint().getValue()
                 + ",\"FanMode\":" + thermodata.getCurrentFanMode().getValue()
-                + minutesHold
                 + "}";
         if (!isLoginValid()) {
             logger.info("could not submit thermostat data, login not valid");
             return false;
         }
         try {
+            logger.debug(jsonData);
             ContentResponse cr = httpclient
                     .POST("https://mytotalconnectcomfort.com/portal/Device/SubmitControlScreenChanges")
                     .content(new StringContentProvider("application/json", jsonData, Charset.forName("UTF-8")))
                     .send();
             if (!cr.getContentAsString().equals("{\"success\":1}")) {
                 logger.info("Failed to submit thermostat data.");
-                logger.debug(jsonData);
                 return false;
             }
         } catch (Exception ex) {
@@ -233,47 +234,40 @@ public class MyTotalComfortClient {
      * @param deviceID device to fetch data for
      * @return thermostat data
      */
-    public HoneywellThermostatData getThermostatData(String deviceID) {
+    public HoneywellThermostatData getThermostatData(String deviceID) throws Exception {
         HoneywellThermostatData thermodata = new HoneywellThermostatData();
         if (isLoginValid()) {
             String jsonData;
-            try {
-                ContentResponse cr = httpclient.newRequest(
-                        "https://mytotalconnectcomfort.com/portal/Device/CheckDataSession/" + deviceID)
-                        .header("X-Requested-With", "XMLHttpRequest")
-                        .send();
-                if (cr.getStatus() != 200) {
-                    logger.info("non 200 response when retrieving thermostat data.");
-                    return null;
-                }
-                jsonData = cr.getContentAsString();
-                JsonObject obj = (JsonObject) new JsonParser().parse(jsonData);
-                thermodata.setDeviceId(deviceID);
-                JsonObject uiData = obj.getAsJsonObject("latestData").getAsJsonObject("uiData");
-                thermodata.setCurrentTemperature(
-                        uiData.get("DispTemperature").getAsInt());
-                thermodata.setDisplayUnits(
-                        uiData.get("DisplayUnits").getAsString());
-                thermodata.setCurrentHumidity(
-                        uiData.get("IndoorHumidity").getAsInt());
-                thermodata.setHeatSetPoint(
-                        uiData.get("HeatSetpoint").getAsInt());
-                thermodata.setCoolSetPoint(
-                        uiData.get("CoolSetpoint").getAsInt());
-
-                thermodata.setCurrentSystemMode(HoneywellThermostatSystemMode.getEnum(uiData.get("SystemSwitchPosition").getAsInt()));
-
-                thermodata.setCurrentFanMode(HoneywellThermostatFanMode.getEnum(obj.getAsJsonObject("latestData").getAsJsonObject("fanData").get("fanMode").getAsInt()));
-
-                thermodata.setCurrentFanMode(HoneywellThermostatFanMode.getEnum(uiData.get("CurrentSetpointStatus").getAsInt()));
-
-                thermodata.setHoldUntilTime(uiData.get("HeatNextPeriod").getAsInt());
-
-
-            } catch (Exception e) {
-                logger.info("error retrieving thermostat data", e);
-                return new HoneywellThermostatData();
+            ContentResponse cr = httpclient.newRequest(
+                    "https://mytotalconnectcomfort.com/portal/Device/CheckDataSession/" + deviceID)
+                    .header("X-Requested-With", "XMLHttpRequest")
+                    .send();
+            if (cr.getStatus() != 200) {
+                logger.info("non 200 response when retrieving thermostat data.");
+                return null;
             }
+            jsonData = cr.getContentAsString();
+            JsonObject obj = (JsonObject) new JsonParser().parse(jsonData);
+            thermodata.setDeviceId(deviceID);
+            JsonObject uiData = obj.getAsJsonObject("latestData").getAsJsonObject("uiData");
+            thermodata.setCurrentTemperature(
+                    uiData.get("DispTemperature").getAsInt());
+            thermodata.setDisplayUnits(
+                    uiData.get("DisplayUnits").getAsString());
+            thermodata.setCurrentHumidity(
+                    uiData.get("IndoorHumidity").getAsInt());
+            thermodata.setHeatSetPoint(
+                    uiData.get("HeatSetpoint").getAsInt());
+            thermodata.setCoolSetPoint(
+                    uiData.get("CoolSetpoint").getAsInt());
+
+            thermodata.setCurrentSystemMode(HoneywellThermostatSystemMode.getEnum(uiData.get("SystemSwitchPosition").getAsInt()));
+
+            thermodata.setCurrentFanMode(HoneywellThermostatFanMode.getEnum(obj.getAsJsonObject("latestData").getAsJsonObject("fanData").get("fanMode").getAsInt()));
+
+            thermodata.setCurrentSetPoint(HoneywellThermostatSetPoint.getEnum(uiData.get("CurrentSetpointStatus").getAsInt()));
+
+            thermodata.setHoldUntilTime(uiData.get("HeatNextPeriod").getAsInt());
         }
         for(HoneywellThermostatData data : thermostats) {
             if(data.getDeviceId().equals(deviceID)) {

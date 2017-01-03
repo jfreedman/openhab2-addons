@@ -13,7 +13,7 @@ package org.openhab.binding.honeywellmytotalcomfortthermostat.internal.data;
 public enum HoneywellThermostatSetPoint {
     TEMP_HOLD(1),
     PERM_HOLD(2),
-    SCHEDULE(3);
+    SCHEDULE(0);
 
     private final int val;
 

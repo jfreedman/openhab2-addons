@@ -19,7 +19,6 @@
 	<channel-type id="systemMode">
 		<item-type>String</item-type>
 		<label>System Mode</label>
-		<description>System mode: heat, cool, or off</description>
 		<state>
 			<options>
 				<option value="HEAT">Heat</option>
@@ -31,12 +30,12 @@
 	<channel-type id="heatSetPoint">
 		<item-type>Number</item-type>
 		<label>Heat Set At</label>
-		<state min="40" max="80" step="1" pattern="%d °F"/>
+		<state min="40" max="90" step="1" pattern="%d °F"/>
 	</channel-type>
 	<channel-type id="coolSetPoint">
 		<item-type>Number</item-type>
 		<label>Cool Set At</label>
-		<state min="60" max="99" step="1" pattern="%d °F"/>
+		<state min="50" max="99" step="1" pattern="%d °F"/>
 	</channel-type>
 	<channel-type id="FanMode">
 		<item-type>String</item-type>
@@ -52,8 +51,8 @@
 	</channel-type>
 	<channel-type id="holdUntil" advanced="true">
 		<item-type>DateTime</item-type>
-		<label>Hold Temp Until:</label>
-		<description>Thermostat goes back to schedule after this time.</description>
+		<label>Hold Temp Until</label>
+		<description>Thermostat goes back to schedule after this time if schedule mode is set to temp hold.</description>
 	</channel-type>
 	<channel-type id="scheduleMode">
 		<item-type>String</item-type>

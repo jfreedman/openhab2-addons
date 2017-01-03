@@ -53,6 +53,8 @@ public class HoneywellThermostatHandler extends BaseThingHandler implements Ther
 
     private HoneywellThermostatData thermodata;
 
+    private int failCount=0;
+
     public final static Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Sets.newHashSet(
             HONEY_THERM_THING);
 
@@ -139,23 +141,24 @@ public class HoneywellThermostatHandler extends BaseThingHandler implements Ther
                 StringType sched = (StringType) command;
                 HoneywellThermostatSetPoint setpoint = HoneywellThermostatSetPoint.valueOf(sched.toString());
                 updates.setCurrentSetPoint(setpoint);
-
-                if(setpoint== TEMP_HOLD) {
-                    // default hold schedule to 2 hours
-                    updates.setHoldUntilTime(120);
-                    holdTime.add(Calendar.HOUR,2);
-                }
                 break;
             case HOLD_UNTIL:
-                if(updates.getCurrentSetPoint()==TEMP_HOLD) {
-                    // default hold schedule to 2 hours
-                    DateTimeType holdDate = (DateTimeType) command;
-                    updates.setHoldUntilTime(getMinutesDiff(holdDate.getCalendar()));
-                }
-                updateState(new ChannelUID(getThing().getUID(),HOLD_UNTIL),new DateTimeType(holdTime));
+                DateTimeType holdDate = (DateTimeType) command;
+                int period = getPeriodFromTime(holdDate.getCalendar());
+                updates.setHoldUntilTime(period);
+                Calendar holdUntil = Calendar.getInstance();
+                holdUntil.set(Calendar.HOUR_OF_DAY, holdUntil.getActualMinimum(Calendar.HOUR_OF_DAY));
+                holdUntil.set(Calendar.MINUTE,      holdUntil.getActualMinimum(Calendar.MINUTE));
+                holdUntil.set(Calendar.SECOND,      holdUntil.getActualMinimum(Calendar.SECOND));
+                holdUntil.set(Calendar.MILLISECOND, holdUntil.getActualMinimum(Calendar.MILLISECOND));
+                logger.info("period:" + period);
+                int ms = getMillisecondsFromPeriod(period);
+                logger.info("ms:" + ms);
+                holdUntil.add(Calendar.MILLISECOND,ms);
+                updateState(new ChannelUID(getThing().getUID(),HOLD_UNTIL),new DateTimeType(holdUntil));
                 break;
         }
-
+        //todo: shouldn't update states until this is successful
         if (!webapi.submitThermostatChange(deviceID, updates)) {
             logger.info("Failed to submit changes to honeywell site.");
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
@@ -167,19 +170,50 @@ public class HoneywellThermostatHandler extends BaseThingHandler implements Ther
     }
 
     /**
-     * finds number of minutes between a time and now
+     * finds number of minutes from 15 minute period
+     * @param period the period number to use
+     */
+    private int getMillisecondsFromPeriod(int period) {
+        return period*15*60000;
+    }
+
+    /**
+     * finds period of a time
      * @param endTime the end time
      */
-    private int getMinutesDiff(Calendar endTime) {
-        Calendar now = Calendar.getInstance();
-        return (int)(endTime.getTime().getTime() - now.getTime().getTime())/60000;
+    private int getPeriodFromTime(Calendar endTime) {
+        return (endTime.get(Calendar.HOUR_OF_DAY) * 4) + (int) (endTime.get(Calendar.MINUTE)/15);
     }
 
     /**
      * calls the web api to refersh a thermostat
      */
     private void refreshThermostatData() {
-        thermodata = webapi.getThermostatData(deviceID);
+        try {
+            thermodata = webapi.getThermostatData(deviceID);
+            if(failCount>0) {
+                failCount = 0;
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        refreshThermostatData();
+                    }
+                };
+                refreshJob.cancel(false);
+                refreshJob = scheduler.scheduleAtFixedRate(runnable, 60, 60, TimeUnit.SECONDS);
+            }
+        } catch (Exception ex) {
+            logger.error("error updating thermostat data");
+            failCount++;
+            Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+                    refreshThermostatData();
+                }
+            };
+            refreshJob.cancel(true);
+            refreshJob = scheduler.scheduleAtFixedRate(runnable, 60 * failCount, 60 * failCount, TimeUnit.SECONDS);
+        }
         updateThermostatStatus(thermodata);
     }
 
@@ -196,19 +230,23 @@ public class HoneywellThermostatHandler extends BaseThingHandler implements Ther
             updateState(new ChannelUID(getThing().getUID(), CURRENT_HUMIDITY),
                     new DecimalType(data.getCurrentHumidity()));
             updateState(new ChannelUID(getThing().getUID(), SYSTEM_MODE),
-                    new StringType(String.valueOf(data.getCurrentSystemMode().getValue())));
+                    new StringType(data.getCurrentSystemMode().toString()));
             updateState(new ChannelUID(getThing().getUID(), HEAT_SETPOINT),
                     new DecimalType(data.getHeatSetPoint()));
             updateState(new ChannelUID(getThing().getUID(), COOL_SETPOINT),
                     new DecimalType(data.getCoolSetPoint()));
             updateState(new ChannelUID(getThing().getUID(), FAN_MODE),
-                    new StringType(String.valueOf(data.getCurrentFanMode().getValue())));
+                    new StringType(data.getCurrentFanMode().toString()));
             updateState(new ChannelUID(getThing().getUID(), SCHEDULE_MODE),
-                    new StringType(String.valueOf(data.getCurrentSetPoint().getValue())));
+                    new StringType(data.getCurrentSetPoint().toString()));
             Calendar holdUntil = Calendar.getInstance();
-            holdUntil.add(Calendar.MINUTE,data.getHoldUntilTime());
+            holdUntil.set(Calendar.HOUR_OF_DAY,0);
+            holdUntil.set(Calendar.MINUTE,0);
+            holdUntil.set(Calendar.SECOND,0);
+            holdUntil.set(Calendar.MILLISECOND,0);
+            holdUntil.add(Calendar.MILLISECOND,getMillisecondsFromPeriod(data.getHoldUntilTime()));
             updateState(new ChannelUID(getThing().getUID(), HOLD_UNTIL),
-                    new DateTimeType(holdUntil));
+                        new DateTimeType(holdUntil));
         } else {
             updateStatus(ThingStatus.OFFLINE);
         }

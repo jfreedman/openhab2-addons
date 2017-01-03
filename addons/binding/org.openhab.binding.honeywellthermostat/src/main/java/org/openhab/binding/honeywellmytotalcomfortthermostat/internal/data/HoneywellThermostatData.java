@@ -166,8 +166,8 @@ public class HoneywellThermostatData {
     }
 
     /**
-     * sets how man minutes to hold temp for
-     * @param holdUntilTime the number of minutes to hold temp
+     * sets how many 15 minute spans to hold temp for
+     * @param holdUntilTime the number 15 min spans
      */
     public void setHoldUntilTime(int holdUntilTime) {
         this.holdUntilTime = holdUntilTime;
